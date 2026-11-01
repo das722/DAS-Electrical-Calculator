@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAS Electrical Calculator</title>
+<style>
+body{font-family:Arial;background:#f1f4f8;margin:0;color:#172536}
+header{background:#10243a;color:white;padding:22px;text-align:center}
+nav{display:flex;flex-wrap:wrap;background:white}
+nav button{flex:1;padding:13px 5px;border:0;background:white;color:#1769aa;font-weight:bold}
+section{display:none;padding:15px}
+section.active{display:block}
+.card{background:white;padding:17px;border-radius:12px;margin:12px 0;box-shadow:0 2px 8px #ccc}
+input,select{width:100%;padding:12px;margin:7px 0 14px;box-sizing:border-box;border:1px solid #ccc;border-radius:7px;font-size:16px}
+button.calc{width:100%;padding:13px;background:#1769aa;color:white;border:0;border-radius:8px;font-weight:bold}
+.result{background:#e5f2ff;padding:14px;margin-top:12px;border-radius:8px;line-height:1.7}
+small{color:#667}
+</style>
+</head>
+<body>
+<header>
+<h2>DAS ELECTRICAL CALCULATOR</h2>
+Industrial Electrical Engineering
+</header>
+<nav>
+<button onclick="show('cable')">Cable</button>
+<button onclick="show('motor')">Motor</button>
+<button onclick="show('kva')">kVA</button>
+<button onclick="show('gen')">Generator</button>
+<button onclick="show('protect')">Protection</button>
+</nav>
+
+<section id="cable" class="active">
+<div class="card">
+<h3>Cable Sizing & Voltage Drop</h3>
+<label>Load Current (A)</label><input id="ci" type="number" value="70">
+<label>Voltage (V)</label><input id="cv" type="number" value="400">
+<label>Cable Length (m, one way)</label><input id="cl" type="number" value="50">
+<label>Conductor</label><select id="cm"><option value=".0225">Copper</option><option value=".036">Aluminium</option></select>
+<label>System</label><select id="cs"><option value="1.732">3 Phase</option><option value="2">Single Phase</option></select>
+<button class="calc" onclick="cable()">Calculate Cable</button>
+<div id="cr" class="result">Results will appear here.</div>
+</div></section>
+
+<section id="motor">
+<div class="card">
+<h3>Motor Calculator</h3>
+<label>Motor Power (kW)</label><input id="mk" type="number" value="37">
+<label>Voltage (V)</label><input id="mv" type="number" value="400">
+<label>Power Factor</label><input id="mp" type="number" value=".85" step=".01">
+<label>Efficiency</label><input id="me" type="number" value=".92" step=".01">
+<button class="calc" onclick="motor()">Calculate Motor</button>
+<div id="mr" class="result"></div>
+</div></section>
+
+<section id="kva">
+<div class="card">
+<h3>kW to kVA Calculator</h3>
+<label>Power (kW)</label><input id="kw" type="number" value="37">
+<label>Power Factor</label><input id="pf" type="number" value=".85" step=".01">
+<button class="calc" onclick="power()">Calculate kVA</button>
+<div id="pr" class="result"></div>
+</div></section>
+
+<section id="gen">
+<div class="card">
+<h3>Generator Sizing</h3>
+<label>Motor Power (kW)</label><input id="gk" type="number" value="37">
+<label>Power Factor</label><input id="gp" type="number" value=".85">
+<label>Efficiency</label><input id="ge" type="number" value=".92">
+<label>Other Loads (kVA)</label><input id="go" type="number" value="0">
+<label>Generator Loading Target (%)</label><input id="gl" type="number" value="80">
+<button class="calc" onclick="generator()">Calculate Generator</button>
+<div id="gr" class="result"></div>
+</div></section>
+
+<section id="protect">
+<div class="card">
+<h3>Protection Selection Guide</h3>
+<label>Design Current (A)</label><input id="bi" type="number" value="70">
+<label>Cable Ampacity (A)</label><input id="bz" type="number" value="100">
+<label>Prospective Fault Current (kA)</label><input id="bf" type="number" value="10">
+<button class="calc" onclick="protection()">Check Protection</button>
+<div id="br" class="result"></div>
+</div></section>
+
+<script>
+function show(id){
+document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+function val(id){return Number(document.getElementById(id).value)}
+function cable(){
+let I=val('ci'),V=val('cv'),L=val('cl'),rho=val('cm'),ph=val('cs');
+if(!(I>0&&V>0&&L>=0)){cr.innerHTML='Enter valid values';return}
+let sizes=[1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240];
+let amps=[16,23,30,39,55,75,95,120,145,185,220,255,290,330,390];
+let index=amps.findIndex(a=>a>=I);
+let size=index<0?240:sizes[index];
+let drop=ph*I*L*rho/size;
+cr.innerHTML='Suggested preliminary cable: <b>'+ (index<0?'Above 240':size+' mm²')+'</b><br>Voltage drop: '+drop.toFixed(2)+' V<br>Voltage drop: '+(drop/V*100).toFixed(2)+'%<br><small>Indicative only. Verify installation-specific cable ampacity and protection.</small>';
+}
+function motor(){
+let k=val('mk'),v=val('mv'),p=val('mp'),e=val('me');
+if(!(k>0&&v>0&&p>0&&p<=1&&e>0&&e<=1)){mr.innerHTML='Check inputs';return}
+let i=k*1000/(1.732*v*p*e);
+mr.innerHTML='Motor current: <b>'+i.toFixed(2)+' A</b><br>Motor apparent power: '+(k/(p*e)).toFixed(2)+' kVA';
+}
+function power(){
+let k=val('kw'),p=val('pf');
+if(!(k>0&&p>0&&p<=1)){pr.innerHTML='Check inputs';return}
+pr.innerHTML='Apparent Power: <b>'+(k/p).toFixed(2)+' kVA</b><br>Reactive Power: '+Math.sqrt((k/p)**2-k*k).toFixed(2)+' kVAR';
+}
+function generator(){
+let k=val('gk'),p=val('gp'),e=val('ge'),o=val('go'),l=val('gl');
+if(!(k>0&&p>0&&p<=1&&e>0&&e<=1&&l>0&&l<=100)){gr.innerHTML='Check inputs';return}
+let demand=k/(p*e)+o;
+let rating=demand/(l/100);
+gr.innerHTML='Motor running demand: '+(k/(p*e)).toFixed(2)+' kVA<br>Total demand: '+demand.toFixed(2)+' kVA<br>Preliminary generator rating: <b>'+rating.toFixed(1)+' kVA</b><br><small>Starting performance must be checked separately using motor starting current, compressor unloading and generator transient data.</small>';
+}
+function protection(){
+let i=val('bi'),z=val('bz'),f=val('bf');
+if(!(i>0&&z>0&&f>0)){br.innerHTML='Check inputs';return}
+let ratings=[6,10,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400];
+let r=ratings.find(x=>x>=i);
+br.innerHTML='Next standard rating: <b>'+(r||'Engineer selection required')+' A</b><br>Basic cable current check: '+(r&&r<=z?'PASS':'REVIEW REQUIRED')+'<br>Minimum breaking capacity must be at least '+f+' kA.<br><small>Final protection requires coordination, trip curves, fault calculations and applicable standards.</small>';
+}
+</script>
+</body>
+</html>
